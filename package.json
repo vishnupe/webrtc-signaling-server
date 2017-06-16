@@ -1,0 +1,24 @@
+{
+  "name": "codelab",
+  "version": "0.0.1",
+  "description": "WebRTC Signaling server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/webrtc/codelab"
+  },
+  "keywords": [
+    "",
+    ""
+  ],
+  "author": "vishnupe",
+  "license": "MIT",
+  "dependencies": {
+    "express": "~3.4.0",
+    "node-static": "~0.7.1",
+    "socket.io": "^1.0.6"
+  }
+}
