@@ -6,7 +6,7 @@ var socketIO = require('socket.io');
 var fileServer = new(static.Server)();
 var app = http.createServer(function (req, res) {
   fileServer.serve(req, res);
-}).listen(2013);
+}).listen(process.env.PORT || 2013);
 
 var io = socketIO.listen(app);
 io.sockets.on('connection', function (socket){
