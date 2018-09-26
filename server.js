@@ -1,79 +1,63 @@
-var os = require('os');
-var static = require('node-static');
-var http = require('http');
-var socketIO = require('socket.io');
+const static = require("node-static");
+const http = require("http");
+const socketIO = require("socket.io");
 
-var fileServer = new(static.Server)();
-var app = http.createServer(function (req, res) {
-  fileServer.serve(req, res);
-}).listen(process.env.PORT || 2013);
+const fileServer = new static.Server();
+const app = http
+  .createServer(function(req, res) {
+    fileServer.serve(req, res);
+  })
+  .listen(process.env.PORT || 2013);
 
 var io = socketIO.listen(app);
-io.sockets.on('connection', function (socket){
-	console.log('client connected>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.');
-    // convenience function to log server messages on the client
-    function log(){
-		var array = [">>> Message from server:"];
-        array.push.apply(array, arguments);
-	    socket.emit('log', array);
-	}
 
-	socket.on('create or join', function (room) {
-        log('Request to create or join room ' + room);
+io.sockets.on("connection", (socket) => {
 
-		var numClients = findClientsSocket(room).length;
-		log('Room ' + room + ' has ' + numClients + ' client(s)');
+  console.log("client connected: ", socket.id);
+  socket.emit("connected", socket.id);
 
-		if (numClients === 0){
-			socket.join(room);
-            socket.emit('created', room, socket.id);
-            socket.on('message', function (message) {
-                socket.broadcast.to(room).emit('message', message);
-            });
+  socket.on("create or join", (room) => {
 
-		} else if (numClients == 1) {
-			socket.join(room);
-            socket.emit('joined', room, socket.id);
-            io.sockets.in(room).emit('ready');
-            socket.on('message', function (message) {
-                socket.broadcast.to(room).emit('message', message);
-            });
+    var currentClients = findClientsSocket(room);
+    console.log(currentClients);
 
-		} else { // max two clients
-			socket.emit('full', room);
-		}
-	});
+    socket.join(room);
+    socket.emit("joined", currentClients);
+    socket.broadcast.to(room).emit("new_client_joined", socket.id, currentClients.length + 1);
 
-    socket.on('ipaddr', function () {
-        var ifaces = os.networkInterfaces();
-        for (var dev in ifaces) {
-            ifaces[dev].forEach(function (details) {
-                if (details.family=='IPv4' && details.address != '127.0.0.1') {
-                    socket.emit('ipaddr', details.address);
-                }
-          });
-        }
+    // socket.on("message", (message) => {
+    //   socket.broadcast.to(room).emit("message", message);
+    // });
+    socket.on('message', (toId, message) => {
+      // relay the message to the recipient including the sender's id
+      io.to(toId).emit('message', socket.id, message);
     });
 
+    socket.on('disconnect', function () {
+        console.log("client disconnected: ", socket.id);
+        socket.emit('disconnected', socket.id);
+    });
+
+  });
+
 });
+
 function findClientsSocket(roomId, namespace) {
-    var res = []
+  var res = [],
     // the default namespace is "/"
-    , ns = io.of(namespace ||"/");
+    ns = io.of(namespace || "/");
 
-    if (ns) {
-        for (var id in ns.connected) {
-            if(roomId) {
-                var index = ns.connected[id].rooms.indexOf(roomId);
-                if(index !== -1) {
-                    res.push(ns.connected[id]);
-                }
-            } else {
-                res.push(ns.connected[id]);
-            }
+  if (ns) {
+    for (var id in ns.connected) {
+      if (roomId) {
+        var index = ns.connected[id].rooms.indexOf(roomId);
+        if (index !== -1) {
+          res.push(id);
         }
+      } else {
+        res.push(id);
+      }
     }
-    return res;
+  }
+  return res;
 }
-
-
