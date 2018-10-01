@@ -36,6 +36,7 @@ io.sockets.on("connection", (socket) => {
     socket.on('disconnect', function () {
         console.log("client disconnected: ", socket.id);
         socket.emit('disconnected', socket.id);
+        socket.broadcast.to(room).emit("client_left", socket.id);
     });
 
   });
